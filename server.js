@@ -44,13 +44,21 @@ app.get("/", (req, res) => {
  app.use("/api/invoices", invoiceRoutes);
 
 
- async function startServer() {
-  await connectDB();
+ 
+async function startServer() {
+    await connectDB();
 
- app.listen(3000, () => {
-  console.log("Server running on port 3000");
+    const PORT = process.env.PORT || 3000;
+
+    app.listen(PORT, () => {
+        console.log(`Server running on port ${PORT}`);
+    });
+}
+
+startServer().catch((error) => {
+    console.error("Server startup failed:", error.message);
+    process.exit(1);
 });
- }
 
  startServer().catch((error) => {
   console.error("Server startup failed:", error.message);
