@@ -1,15 +1,41 @@
 import mongoose from "mongoose";
 
+export const ORDER_STATUSES = [
+  "Pending",
+  "Confirmed",
+  "Order Placed",
+  "Order Confirmed",
+  "Processing",
+  "Packed",
+  "Shipped",
+  "Out for Delivery",
+  "Delivered",
+  "Cancelled",
+  "Payment Failed",
+  "Return Requested",
+  "Return Approved",
+  "Refund Processing",
+  "Refunded",
+];
+
+export const DELIVERY_STATUSES = [
+  "Unassigned",
+  "Assigned",
+  "Picked Up",
+  "In Transit",
+  "Out for Delivery",
+  "Delivered",
+  "Failed Attempt",
+];
+
 const orderSchema = new mongoose.Schema(
   {
-    // jo user placed ke rha hai 
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
 
-    // Product include
     items: [
       {
         product: {
@@ -27,18 +53,37 @@ const orderSchema = new mongoose.Schema(
           required: true,
           min: 0,
         },
+        originalPrice: {
+          type: Number,
+          min: 0,
+        },
+        discountPercentage: {
+          type: Number,
+          default: 0,
+          min: 0,
+        },
       },
     ],
 
-    // Total price of all products
+    // Items subtotal using discounted selling prices
     totalAmount: {
       type: Number,
       required: true,
       min: 0,
     },
 
+    productDiscountSavings: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
 
-    // Coupon details
+    deliveryCharge: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
     couponCode: {
       type: String,
       default: null,
@@ -57,47 +102,16 @@ const orderSchema = new mongoose.Schema(
       min: 0,
     },
 
-
-    // Delivery address
     shippingAddress: {
-      fullName: {
-        type: String,
-        required: true,
-        trim: true,
-      },
-      phone: {
-        type: String,
-        required: true,
-        trim: true,
-      },
-      address: {
-        type: String,
-        required: true,
-        trim: true,
-      },
-      city: {
-        type: String,
-        required: true,
-        trim: true,
-      },
-      state: {
-        type: String,
-        required: true,
-        trim: true,
-      },
-      postalCode: {
-        type: String,
-        required: true,
-        trim: true,
-      },
-      country: {
-        type: String,
-        required: true,
-        trim: true,
-      },
+      fullName: { type: String, required: true, trim: true },
+      phone: { type: String, required: true, trim: true },
+      address: { type: String, required: true, trim: true },
+      city: { type: String, required: true, trim: true },
+      state: { type: String, required: true, trim: true },
+      postalCode: { type: String, required: true, trim: true },
+      country: { type: String, required: true, trim: true },
     },
 
-    // Payment method
     paymentMethod: {
       type: String,
       enum: ["COD", "Online"],
@@ -105,39 +119,120 @@ const orderSchema = new mongoose.Schema(
       required: true,
     },
 
-    // Payment status
     paymentStatus: {
       type: String,
-      enum: ["Pending", "Paid", "Failed"],
+      enum: ["Pending", "Paid", "Failed", "Refunded"],
       default: "Pending",
     },
 
-razorpayOrderId: {
-    type: String,
-    default: null
-},
+    razorpayOrderId: {
+      type: String,
+      default: null,
+    },
 
-razorpayPaymentId: {
-    type: String,
-    default: null
-},
+    razorpayPaymentId: {
+      type: String,
+      default: null,
+    },
 
-
-    // Order progress
     orderStatus: {
       type: String,
-      enum: [
-        "Pending",
-        "Confirmed",
-        "Shipped",
-        "Delivered",
-        "Cancelled",
-      ],
-      default: "Pending",
+      enum: ORDER_STATUSES,
+      default: "Order Placed",
+    },
+
+    statusHistory: [
+      {
+        status: { type: String, required: true },
+        timestamp: { type: Date, default: Date.now },
+        note: { type: String, default: "" },
+        updatedBy: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+          default: null,
+        },
+      },
+    ],
+
+    estimatedDeliveryDate: {
+      type: Date,
+      default: null,
+    },
+
+    deliveredAt: {
+      type: Date,
+      default: null,
+    },
+
+    cancelledAt: {
+      type: Date,
+      default: null,
+    },
+
+    cancellationReason: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    idempotencyKey: {
+      type: String,
+      default: null,
+      index: true,
+      sparse: true,
+    },
+
+    deliveryAssignment: {
+      partner: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "DeliveryPartner",
+        default: null,
+      },
+      partnerName: { type: String, default: "" },
+      partnerPhone: { type: String, default: "" },
+      deliveryStatus: {
+        type: String,
+        enum: DELIVERY_STATUSES,
+        default: "Unassigned",
+      },
+      trackingNumber: { type: String, default: "" },
+      deliveryNotes: { type: String, default: "" },
+      assignedAt: { type: Date, default: null },
+      updatedAt: { type: Date, default: null },
+    },
+
+    refund: {
+      status: {
+        type: String,
+        enum: [
+          "None",
+          "Requested",
+          "Approved",
+          "Rejected",
+          "Processing",
+          "Completed",
+        ],
+        default: "None",
+      },
+      reason: { type: String, default: "" },
+      details: { type: String, default: "" },
+      amount: { type: Number, default: 0, min: 0 },
+      method: {
+        type: String,
+        enum: ["None", "Razorpay", "Manual/COD"],
+        default: "None",
+      },
+      payoutDetails: { type: String, default: "" },
+      razorpayRefundId: { type: String, default: "" },
+      adminNote: { type: String, default: "" },
+      transactionRef: { type: String, default: "" },
+      requestedAt: { type: Date, default: null },
+      processedAt: { type: Date, default: null },
     },
   },
   { timestamps: true }
 );
+
 const Order = mongoose.model("Order", orderSchema);
 
 export default Order;

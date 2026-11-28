@@ -1,3 +1,4 @@
+import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
@@ -20,49 +21,41 @@ const app = express();
 
 app.use(cors());
 app.use(
-    express.json({
-        verify: (req, res, buf) => {
-            req.rawBody = Buffer.from(buf);
-        }
-    })
+  express.json({
+    verify: (req, res, buf) => {
+      req.rawBody = Buffer.from(buf);
+    },
+  })
 );
 app.use(express.urlencoded({ extended: true }));
 
 app.get("/", (req, res) => {
-  res.send("Hello World!");
+  res.send("ShopEase API is running");
 });
- app.use("/api/products",productRoutes);
- app.use("/api/users",userRoutes);
- app.use("/api/cart",cartRoutes);
- app.use("/api/orders",orderRoutes);
- app.use("/api/reviews", reviewRoutes);
- app.use("/api/wishlist", wishlistRoutes);
- app.use("/api/coupons", couponRoutes);
- app.use("/api/payments", paymentRoutes);
- app.use("/api/admin", adminRoutes);
- app.use("/api/upload", uploadRoutes);
- app.use("/api/invoices", invoiceRoutes);
 
+app.use("/api/products", productRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/cart", cartRoutes);
+app.use("/api/orders", orderRoutes);
+app.use("/api/reviews", reviewRoutes);
+app.use("/api/wishlist", wishlistRoutes);
+app.use("/api/coupons", couponRoutes);
+app.use("/api/payments", paymentRoutes);
+app.use("/api/admin", adminRoutes);
+app.use("/api/upload", uploadRoutes);
+app.use("/api/invoices", invoiceRoutes);
 
- 
 async function startServer() {
-    await connectDB();
+  await connectDB();
 
-    const PORT = process.env.PORT || 3000;
+  const PORT = parseInt(process.env.PORT, 10) || 3000;
 
-    app.listen(PORT, () => {
-        console.log(`Server running on port ${PORT}`);
-    });
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
 }
 
 startServer().catch((error) => {
-    console.error("Server startup failed:", error.message);
-    process.exit(1);
-});
-
- startServer().catch((error) => {
   console.error("Server startup failed:", error.message);
   process.exit(1);
 });
-
-
